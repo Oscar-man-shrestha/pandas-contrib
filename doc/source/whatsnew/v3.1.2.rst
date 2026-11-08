@@ -15,6 +15,7 @@ Fixed regressions
 ~~~~~~~~~~~~~~~~~
 - Fixed a regression in :class:`arrays.SparseArray` arithmetic with a ``timedelta64`` scalar in a unit pandas does not support, such as ``np.timedelta64(1, "D")``, raising ``TypeError`` (:issue:`71872`)
 - Fixed a regression in :meth:`DataFrame.plot` and :meth:`Series.plot` raising ``ConversionError`` when plotting timezone-aware datetime data containing missing values (:issue:`71879`)
+- Fixed a regression in :meth:`Series.dt.total_seconds` raising ``ArrowInvalid`` for pyarrow-backed durations above 2**53 ticks, such as ``duration[ns][pyarrow]`` values longer than about 104 days (:issue:`71953`)
 - Fixed a regression in :meth:`Timestamp.strftime` raising ``AttributeError`` instead of ``TypeError`` when ``format`` is not a string (:issue:`71914`)
 
 .. ---------------------------------------------------------------------------

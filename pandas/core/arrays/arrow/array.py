@@ -4468,9 +4468,20 @@ class ArrowExtensionArray(
         return np.array(data, dtype=object)
 
     def _dt_total_seconds(self) -> Self:
+        from pandas.core.arrays.timedeltas import total_seconds_from_ticks
+
         unit = self._pa_array.type.unit
-        unit_per_second = {"s": 1.0, "ms": 1e3, "us": 1e6, "ns": 1e9}
-        result = pc.divide(pc.cast(self._pa_array, pa.int64()), unit_per_second[unit])
+        unit_per_second = {"s": 1, "ms": 10**3, "us": 10**6, "ns": 10**9}
+        ticks = pc.cast(self._pa_array, pa.int64())
+        try:
+            result = pc.divide(ticks, float(unit_per_second[unit]))
+        except pa.ArrowInvalid:
+            # GH#71953: pc.divide casts the int64 ticks to float64 with a safe
+            # cast, which raises above 2**53. Use the same integer/residual
+            # split as TimedeltaArray.total_seconds for those values.
+            np_ticks = pc.fill_null(ticks, 0).to_numpy()
+            values = total_seconds_from_ticks(np_ticks, unit_per_second[unit])
+            result = pa.array(values, mask=self.isna())
         return self._from_pyarrow_array(result)
 
     def _dt_as_unit(self, unit: str) -> Self:

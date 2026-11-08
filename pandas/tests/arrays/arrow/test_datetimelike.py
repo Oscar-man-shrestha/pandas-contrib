@@ -755,6 +755,22 @@ def test_dt_timedelta_total_seconds():
     tm.assert_series_equal(result, expected)
 
 
+@pytest.mark.parametrize("unit", ["s", "ms", "us", "ns"])
+def test_dt_timedelta_total_seconds_large(unit):
+    # GH#71953 durations above 2**53 ticks raised ArrowInvalid
+    values = [
+        pd.Timedelta(days=200),
+        pd.Timedelta(days=-200),
+        pd.Timedelta(days=200, nanoseconds=123_456_789),
+        pd.Timedelta(days=103),
+        None,
+    ]
+    ser = pd.Series(values, dtype=f"timedelta64[{unit}]")
+    result = ser.astype(ArrowDtype(pa.duration(unit))).dt.total_seconds()
+    expected = ser.dt.total_seconds().astype("float64[pyarrow]")
+    tm.assert_series_equal(result, expected, check_exact=True)
+
+
 def test_dt_timedelta_components():
     # Test that .dt.components returns correct values for Arrow duration arrays
     ser = pd.Series(
